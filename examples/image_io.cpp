@@ -16,7 +16,9 @@
 
 #include <fstream>
 #include <cmath>
+#include <iostream>
 #include "image_io.h"
+#include "hdrloader.h"
 
 namespace oidn {
 
@@ -148,11 +150,60 @@ namespace oidn {
     }
   }
 
+
+
+
+
+ImageBuffer loadImageHDR(const std::string& filename)
+{
+    HDRLoaderResult* hdrData = new HDRLoaderResult();
+
+    HDRLoader* hdrLoader = new HDRLoader();
+    if( ! hdrLoader->load( filename.c_str(), *hdrData ) ) {
+        throw std::runtime_error("cannot open file '" + filename + "'");
+    }
+    
+
+    ImageBuffer image(hdrData->width, hdrData->height, 3);
+
+
+    int numFloats = hdrData->width*hdrData->height * 3;
+
+    for (int j = 0; j < numFloats; j++) {
+        image[j] = hdrData->cols[j];
+    }
+
+    return image;
+    
+}
+
+void saveImageHDR(const std::string& filename, const ImageBuffer& image){
+
+
+    if (image.getChannels() != 3)
+      throw std::invalid_argument("image must have 3 channels");
+    
+    HDRLoaderResult* hdrData = new HDRLoaderResult();
+    hdrData->width = image.getWidth();
+    hdrData->height = image.getHeight();
+    hdrData->cols = (float*)image.getData();
+    
+    
+    HDRLoader* hdrLoader = new HDRLoader();
+    if( ! hdrLoader->write( filename.c_str(), hdrData ) ) {
+        throw std::runtime_error("cannot write file '" + filename + "'");
+    }
+}
+
+
   ImageBuffer loadImage(const std::string& filename)
   {
-    if (getExtension(filename) != "pfm")
-      throw std::runtime_error("unsupported image file format");
-    return loadImagePFM(filename);
+    if (getExtension(filename) == "pfm")
+      return loadImagePFM(filename);
+    else if (getExtension(filename) == "hdr")
+      return loadImageHDR(filename);
+    
+    throw std::runtime_error("unsupported image file format");
   }
 
   void saveImage(const std::string& filename, const ImageBuffer& image)
@@ -162,6 +213,8 @@ namespace oidn {
       saveImagePFM(filename, image);
     else if (ext == "ppm")
       saveImagePPM(filename, image);
+    else if (ext == "hdr")
+      saveImageHDR(filename, image);
     else
       throw std::runtime_error("unsupported image file format");
   }

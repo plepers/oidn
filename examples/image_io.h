@@ -25,12 +25,12 @@ namespace oidn {
   class ImageBuffer
   {
   private:
-    std::vector<float> data;
     int width;
     int height;
     int channels;
 
   public:
+  std::vector<float> data;
     ImageBuffer()
       : width(0),
         height(0),
